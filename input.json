@@ -1,0 +1,10 @@
+[
+  {
+    "pid": 11,
+    "functions": [ "LoadLibraryA", "CreateProcessA" ]
+  },
+  {
+    "pid": 22,
+    "functions": [ "WriteFile", "ReadFile", "RegSetValueExA" ]
+  }
+]
