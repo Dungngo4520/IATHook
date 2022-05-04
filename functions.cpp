@@ -1,27 +1,75 @@
 #include "Header.h"
 
 HMODULE WINAPI _LoadLibraryA(LPCSTR lpLibFileName) {
-  printf("LoadLibraryA called with parameter: %s\n", lpLibFileName);
-  return LoadLibraryA(lpLibFileName);
+	char* message = NULL;
+	DWORD dwWritten = 0;
+	HANDLE file;
+
+	file = CreateFile("log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	SetFilePointer(file, 0, NULL, FILE_END);
+
+	message = (char*)malloc(100);
+	sprintf_s(message,100, "LoadLibraryA called with parameter: %s\n", lpLibFileName);
+	WriteFile(file, message, strlen(message), &dwWritten, NULL);
+	return LoadLibraryA(lpLibFileName);
 }
 BOOL WINAPI _CreateProcessA(LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCSTR lpCurrentDirectory, LPSTARTUPINFOA lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation) {
-  printf("CreateProcessA called with parameter: %s\n", lpApplicationName);
-  return CreateProcessA(lpApplicationName, lpCommandLine, lpProcessAttributes,
-                        lpThreadAttributes, bInheritHandles, dwCreationFlags,
-                        lpEnvironment, lpCurrentDirectory, lpStartupInfo,
-                        lpProcessInformation);
+	char* message = NULL;
+	DWORD dwWritten = 0;
+	HANDLE file;
+
+	file = CreateFile("log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	SetFilePointer(file, 0, NULL, FILE_END);
+
+	message = (char*)malloc(100);
+	sprintf_s(message,100, "CreateProcessA called with parameter: %s\n", lpApplicationName);
+	WriteFile(file, message, strlen(message), &dwWritten, NULL);
+
+	return CreateProcessA(lpApplicationName, lpCommandLine, lpProcessAttributes,
+		lpThreadAttributes, bInheritHandles, dwCreationFlags,
+		lpEnvironment, lpCurrentDirectory, lpStartupInfo,
+		lpProcessInformation);
 }
-BOOL WINAPI _WriteFile(HANDLE hFile, (nNumberOfBytesToWrite)LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped) {
-  printf("WriteFile called with parameter: %d\n", nNumberOfBytesToWrite);
-  return WriteFile(hFile, lpBuffer, nNumberOfBytesToWrite,
-                   lpNumberOfBytesWritten, lpOverlapped);
+BOOL WINAPI _WriteFile(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped) {
+	char* message = NULL;
+	DWORD dwWritten = 0;
+	HANDLE file;
+
+	file = CreateFile("log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	SetFilePointer(file, 0, NULL, FILE_END);
+
+	message = (char*)malloc(100);
+	sprintf_s(message,100, "WriteFile called with parameter: %d\n", nNumberOfBytesToWrite);
+	WriteFile(file, message, strlen(message), &dwWritten, NULL);
+	return WriteFile(hFile, lpBuffer, nNumberOfBytesToWrite,
+		lpNumberOfBytesWritten, lpOverlapped);
 }
-BOOL WINAPI _ReadFile(HANDLE hFile, (nNumberOfBytesToRead, *lpNumberOfBytesRead)(FILE)LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped) {
-  printf("ReadFile called with parameter: %d\n", nNumberOfBytesToRead);
-  return ReadFile(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead,
-                  lpOverlapped);
+BOOL WINAPI _ReadFile(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped) {
+	char* message = NULL;
+	DWORD dwWritten = 0;
+	HANDLE file;
+
+	file = CreateFile("log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	SetFilePointer(file, 0, NULL, FILE_END);
+
+	message = (char*)malloc(100);
+	sprintf_s(message,100, "ReadFile called with parameter: %d\n", nNumberOfBytesToRead);
+	WriteFile(file, message, strlen(message), &dwWritten, NULL);
+
+	return ReadFile(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead,
+		lpOverlapped);
 }
-LSTATUS APIENTRY _RegSetValueExA(HKEY hKey, LPCSTR lpValueName, DWORD Reserved, DWORD dwType, (cbData)CONST BYTE* lpData, DWORD cbData) {
-  printf("RegSetValueExA called with parameter: %s\n", lpValueName);
-  return RegSetValueExA(hKey, lpValueName, Reserved, dwType, lpData, cbData);
+LSTATUS APIENTRY _RegSetValueExA(HKEY hKey, LPCSTR lpValueName, DWORD Reserved, DWORD dwType, CONST BYTE* lpData, DWORD cbData) {
+	char* message = NULL;
+	DWORD dwWritten = 0;
+	HANDLE file;
+
+	file = CreateFile("log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	SetFilePointer(file, 0, NULL, FILE_END);
+
+	message = (char*)malloc(100);
+	sprintf_s(message,100, "RegSetValueExA called with parameter: %s\n", lpValueName);
+	WriteFile(file, message, strlen(message), &dwWritten, NULL);
+
+	return RegSetValueExA(hKey, lpValueName, Reserved, dwType, lpData, cbData);
 }

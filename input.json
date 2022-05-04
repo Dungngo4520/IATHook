@@ -1,14 +1,9 @@
 [
 	{
-		"pid": 11,
+		"pid": 9188,
 		"functions": [
 			"LoadLibraryA",
-			"CreateProcessA"
-		]
-	},
-	{
-		"pid": 22,
-		"functions": [
+			"CreateProcessA",
 			"WriteFile",
 			"ReadFile",
 			"RegSetValueExA"

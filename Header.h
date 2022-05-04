@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <Windows.h>
 #include <vector>
+#include <Windows.h>
 #include <Psapi.h>
 #include <winternl.h>
 
@@ -17,7 +17,8 @@ int countString(char *data, int start, int end);
 void printInfo(ProcessInfo *p, int size);
 void freeMemory(ProcessInfo *p, int size);
 bool readJson(char *json, void **output, unsigned long *size);
-void HookIAT(int pid, char *functionName, void *newFunction);
+void HookIAT(int pid, char *functionName, DWORD64 newFunction);
+void* FindFunction(int PID, char* functionName);
 unsigned long long RVA2Offset(unsigned long long base, unsigned long long rva);
 
 HMODULE WINAPI _LoadLibraryA(LPCSTR lpLibFileName);
@@ -25,9 +26,9 @@ BOOL WINAPI _CreateProcessA(LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSEC
                             LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags,
                             LPVOID lpEnvironment, LPCSTR lpCurrentDirectory, LPSTARTUPINFOA lpStartupInfo,
                             LPPROCESS_INFORMATION lpProcessInformation);
-BOOL WINAPI _WriteFile(HANDLE hFile, (nNumberOfBytesToWrite)LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite,
+BOOL WINAPI _WriteFile(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite,
                        LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped);
-BOOL WINAPI _ReadFile(HANDLE hFile, (nNumberOfBytesToRead, *lpNumberOfBytesRead)(FILE)LPVOID lpBuffer,
+BOOL WINAPI _ReadFile(HANDLE hFile, LPVOID lpBuffer,
                       DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped);
 LSTATUS APIENTRY _RegSetValueExA(HKEY hKey, LPCSTR lpValueName, DWORD Reserved, DWORD dwType,
-                                 (cbData)CONST BYTE *lpData, DWORD cbData);
+                                 CONST BYTE *lpData, DWORD cbData);
