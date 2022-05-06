@@ -5,9 +5,9 @@ HMODULE WINAPI _LoadLibraryA(LPCSTR lpLibFileName) {
 	DWORD dwWritten = 0;
 	HANDLE file;
 
-	MessageBox(NULL, "Hooked", NULL, MB_ICONEXCLAMATION | MB_YESNO);
+	MessageBox(NULL, "LoadLibraryA Hooked", NULL, 0);
 
-	file = CreateFile("C:\\Users\\Administrator\\Documents\\Visual Studio 2015\\Projects\\IATHook\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	SetFilePointer(file, 0, NULL, FILE_END);
 
 	message = (char*)malloc(100);
@@ -20,8 +20,8 @@ BOOL WINAPI _CreateProcessA(LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSEC
 	DWORD dwWritten = 0;
 	HANDLE file;
 
-	MessageBox(NULL, "Hooked", NULL, MB_ICONEXCLAMATION | MB_YESNO);
-	file = CreateFile("C:\\Users\\Administrator\\Documents\\Visual Studio 2015\\Projects\\IATHook\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	MessageBox(NULL, "CreateProcessA Hooked", NULL, 0);
+	file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	SetFilePointer(file, 0, NULL, FILE_END);
 
 	message = (char*)malloc(100);
@@ -38,8 +38,8 @@ BOOL WINAPI _WriteFile(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWri
 	DWORD dwWritten = 0;
 	HANDLE file;
 
-	MessageBox(NULL, "Hooked", NULL, MB_ICONEXCLAMATION | MB_YESNO);
-	file = CreateFile("C:\\Users\\Administrator\\Documents\\Visual Studio 2015\\Projects\\IATHook\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	MessageBox(NULL, "WriteFile Hooked", NULL, 0);
+	file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	SetFilePointer(file, 0, NULL, FILE_END);
 
 	message = (char*)malloc(100);
@@ -53,8 +53,8 @@ BOOL WINAPI _ReadFile(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead,
 	DWORD dwWritten = 0;
 	HANDLE file;
 
-	MessageBox(NULL, "Hooked", NULL, MB_ICONEXCLAMATION | MB_YESNO);
-	file = CreateFile("C:\\Users\\Administrator\\Documents\\Visual Studio 2015\\Projects\\IATHook\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	MessageBox(NULL, "ReadFile Hooked", NULL, 0);
+	file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	SetFilePointer(file, 0, NULL, FILE_END);
 
 	message = (char*)malloc(100);
@@ -69,8 +69,8 @@ LSTATUS APIENTRY _RegSetValueExA(HKEY hKey, LPCSTR lpValueName, DWORD Reserved, 
 	DWORD dwWritten = 0;
 	HANDLE file;
 
-	MessageBox(NULL, "Hooked", NULL, MB_ICONEXCLAMATION | MB_YESNO);
-	file = CreateFile("C:\\Users\\Administrator\\Documents\\Visual Studio 2015\\Projects\\IATHook\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	MessageBox(NULL, "RegSetValueExA Hooked", NULL, 0);
+	file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	SetFilePointer(file, 0, NULL, FILE_END);
 
 	message = (char*)malloc(100);

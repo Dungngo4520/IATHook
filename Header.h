@@ -17,8 +17,7 @@ int countString(char *data, int start, int end);
 void printInfo(ProcessInfo *p, int size);
 void freeMemory(ProcessInfo *p, int size);
 bool readJson(char *json, void **output, unsigned long *size);
-void HookIAT(int pid, char *functionName, DWORD64 newFunction);
-void* FindFunction(int PID, char* functionName);
+void HookIAT(int PID, char* functionName,DWORD64 newFunction, DWORD64* oldFunction);
 
 HMODULE WINAPI _LoadLibraryA(LPCSTR lpLibFileName);
 BOOL WINAPI _CreateProcessA(LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes,

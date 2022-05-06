@@ -5,6 +5,7 @@ int main(int argc, char *argv[]) {
 	unsigned long size = 0;
 	int numberOfProcess = 0;
 	ProcessInfo *p = NULL;
+	DWORD64 oldLoadLibrary=0, oldCreateProcess=0, oldWriteFile=0, oldReadFile=0, oldRegSetValue=0;
 	
 	char *fileName = (char *)"input.json";
 	if (!readJson(fileName, (void **)&data, &size)) {
@@ -18,19 +19,19 @@ int main(int argc, char *argv[]) {
 	for (int i = 0; i < numberOfProcess; i++) {
 		for (int j = 0; j < p[i].numberOfFunction; j++) {
 			if (strncmp(p[i].function[j], "LoadLibraryA", 12) == 0) {
-				HookIAT(p[i].PID, "LoadLibraryA", (DWORD64)&_LoadLibraryA);
+				HookIAT(p[i].PID, "LoadLibraryA", (DWORD64)&_LoadLibraryA, &oldLoadLibrary);
 			}
 			else if (strncmp(p[i].function[j], "CreateProcessA", 14) == 0) {
-				HookIAT(p[i].PID, "CreateProcessA", (DWORD64)&_CreateProcessA);
+				HookIAT(p[i].PID, "CreateProcessA", (DWORD64)&_CreateProcessA, &oldCreateProcess);
 			}
 			else if (strncmp(p[i].function[j], "WriteFile", 9) == 0) {
-				HookIAT(p[i].PID, "WriteFile", (DWORD64)&_WriteFile);
+				HookIAT(p[i].PID, "WriteFile", (DWORD64)&_WriteFile, &oldWriteFile);
 			}
 			else if (strncmp(p[i].function[j], "ReadFile", 8) == 0) {
-				HookIAT(p[i].PID, "ReadFile", (DWORD64)&_ReadFile);
+				HookIAT(p[i].PID, "ReadFile", (DWORD64)&_ReadFile, &oldReadFile);
 			}
 			else if (strncmp(p[i].function[j], "RegSetValueExA", 13) == 0) {
-				HookIAT(p[i].PID, "RegSetValueExA", (DWORD64)&_RegSetValueExA);
+				HookIAT(p[i].PID, "RegSetValueExA", (DWORD64)&_RegSetValueExA, &oldRegSetValue);
 			}
 		}
 	}
@@ -39,28 +40,7 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-void HookIAT(int pid, char *functionName, DWORD64 newFunction) {
-	DWORD64* pOldFunction = NULL;
-	DWORD accessProtectionValue, accessProtect;
-
-
-	pOldFunction = (DWORD64*)FindFunction(pid, functionName);
-	if (!pOldFunction) {
-		return;
-	}
-
-	if (!VirtualProtect(pOldFunction, sizeof(PSIZE_T), PAGE_EXECUTE_READWRITE, &accessProtectionValue)) {
-		printf("Cant change protection. Error: %d", GetLastError());
-		return;
-	}
-	*pOldFunction = newFunction;
-	if (!VirtualProtect(pOldFunction, sizeof(PSIZE_T), accessProtectionValue, &accessProtect)) {
-		printf("Cant change protection. Error: %d", GetLastError());
-		return;
-	}
-}
-
-void* FindFunction(int PID, char* functionName) {
+void HookIAT(int PID, char * functionName, DWORD64 newFunction, DWORD64 * oldFunction) {
 	PROCESS_BASIC_INFORMATION *pBasicInfo = NULL;
 	HANDLE hProcess = INVALID_HANDLE_VALUE;
 	char* processPath = NULL;
@@ -70,37 +50,61 @@ void* FindFunction(int PID, char* functionName) {
 	IMAGE_NT_HEADERS *pNtHeader = NULL;
 	IMAGE_IMPORT_DESCRIPTOR *pImportDescriptor = NULL;
 
+	//get Process handle
 	hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
 	if (hProcess == NULL) {
 		printf("Error: Cannot open process %d. Error: %d\n", PID, GetLastError());
-		return 0;
+		return;
 	}
+
+	//get base address of process
 	processPath = (char*)malloc(MAX_PATH);
 	GetModuleFileNameEx(hProcess, NULL, processPath, MAX_PATH);
 	LoadLibrary(processPath);
 	hMod = GetModuleHandle(processPath);
 	if (!hMod) {
-		printf("Error: %d", GetLastError());
+		printf("Error: %d\n", GetLastError());
 	}
 	GetModuleInformation(hProcess, hMod, &moduleInfo, sizeof(MODULEINFO));
 
+	//get import descriptor;
 	char* base = (char*)moduleInfo.lpBaseOfDll;
 	pDosHeader = (IMAGE_DOS_HEADER *)base;
 	pNtHeader = (IMAGE_NT_HEADERS *)((DWORD64)base + pDosHeader->e_lfanew);
 	pImportDescriptor = (IMAGE_IMPORT_DESCRIPTOR *)((DWORD64)base + pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
 
+	//x86
 	if (pNtHeader->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
-		pImportDescriptor = (IMAGE_IMPORT_DESCRIPTOR *)((DWORD64)base + pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
-
+		//iterate dll
 		while (pImportDescriptor->Name != 0) {
 			IMAGE_THUNK_DATA32 *pFirstThunk = (IMAGE_THUNK_DATA32 *)((DWORD64)base + pImportDescriptor->FirstThunk);
 			IMAGE_THUNK_DATA32 *pOriginalFirstThunk = (IMAGE_THUNK_DATA32 *)((DWORD64)base + pImportDescriptor->OriginalFirstThunk);
 
+			//iterate function name
 			while (pOriginalFirstThunk->u1.AddressOfData != 0) {
 				IMAGE_IMPORT_BY_NAME *pImportByName = (IMAGE_IMPORT_BY_NAME *)((DWORD64)base + pOriginalFirstThunk->u1.AddressOfData);
+
 				if (strncmp((char *)pImportByName->Name, functionName, strlen(functionName)) == 0) {
-					printf("Found %s\n", functionName);
-					return &pFirstThunk->u1.Function;
+					printf("Found %s in %s\n", (char*)pImportByName->Name, (char*)(pImportDescriptor->Name + base));
+					DWORD accessProtect;
+
+					//change protection
+					if (!VirtualProtectEx(hProcess, &pFirstThunk->u1.Function, sizeof(DWORD*), PAGE_EXECUTE_READWRITE, &accessProtect)) {
+						printf("Cant change protection. Error: %d\n", GetLastError());
+						return;
+					}
+
+					*oldFunction = pFirstThunk->u1.Function;
+					pFirstThunk->u1.Function = newFunction;
+					if (!WriteProcessMemory(hProcess, &pFirstThunk->u1.Function, &newFunction, sizeof(newFunction), NULL)) {
+						printf("Cant write to function. Error: %d\n", GetLastError());
+					}
+					
+					//unchange protection
+					if (!VirtualProtectEx(hProcess, &pFirstThunk->u1.Function, sizeof(DWORD*), accessProtect, &accessProtect)) {
+						printf("Cant change protection. Error: %d\n", GetLastError());
+						return;
+					}
 				}
 				pOriginalFirstThunk++;
 				pFirstThunk++;
@@ -108,18 +112,38 @@ void* FindFunction(int PID, char* functionName) {
 			pImportDescriptor++;
 		}
 	}
+	//x64
 	else if (pNtHeader->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
-		pImportDescriptor = (IMAGE_IMPORT_DESCRIPTOR *)((DWORD64)base + pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
-
+		//iterate dll
 		while (pImportDescriptor->Name != 0) {
 			IMAGE_THUNK_DATA64 *pFirstThunk = (IMAGE_THUNK_DATA64 *)((DWORD64)base + pImportDescriptor->FirstThunk);
 			IMAGE_THUNK_DATA64 *pOriginalFirstThunk = (IMAGE_THUNK_DATA64 *)((DWORD64)base + pImportDescriptor->OriginalFirstThunk);
 
+			//iterate function name
 			while (pOriginalFirstThunk->u1.AddressOfData != 0) {
 				IMAGE_IMPORT_BY_NAME *pImportByName = (IMAGE_IMPORT_BY_NAME *)((DWORD64)base + pOriginalFirstThunk->u1.AddressOfData);
+
 				if (strncmp((char *)pImportByName->Name, functionName, strlen(functionName)) == 0) {
-					printf("Found %s\n", functionName);
-					return &pFirstThunk->u1.Function;
+					printf("Found %s in %s\n", (char*)pImportByName->Name, (char*)(pImportDescriptor->Name + base));
+					DWORD accessProtect;
+
+					//change protection
+					if (!VirtualProtectEx(hProcess, &pFirstThunk->u1.Function, sizeof(DWORD64*), PAGE_EXECUTE_READWRITE, &accessProtect)) {
+						printf("Cant change protection. Error: %d\n", GetLastError());
+						return;
+					}
+
+					*oldFunction = pFirstThunk->u1.Function;
+					//pFirstThunk->u1.Function = newFunction;
+					if (!WriteProcessMemory(hProcess, &pFirstThunk->u1.Function, &newFunction, sizeof(newFunction), NULL)) {
+						printf("Cant write to function. Error: %d\n", GetLastError());
+					}
+
+					//unchange protection
+					if (!VirtualProtectEx(hProcess, &pFirstThunk->u1.Function, sizeof(DWORD64*), accessProtect, &accessProtect)) {
+						printf("Cant change protection. Error: %d\n", GetLastError());
+						return;
+					}
 				}
 				pOriginalFirstThunk++;
 				pFirstThunk++;
@@ -127,7 +151,7 @@ void* FindFunction(int PID, char* functionName) {
 			pImportDescriptor++;
 		}
 	}
-	return 0;
+	return;
 }
 
 ProcessInfo *parseJson(char *data, int fileSize) {
@@ -256,13 +280,13 @@ bool readJson(char *fileName, void **output, unsigned long *size) {
 	hFile = CreateFile(fileName, GENERIC_ALL, FILE_SHARE_READ, NULL,
 		OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE) {
-		printf("Cannot open file");
+		printf("Cannot open file\n");
 		return FALSE;
 	}
 	fileSize = GetFileSize(hFile, NULL);
 	data = (char *)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, fileSize);
 	if (!ReadFile(hFile, data, fileSize, &byteRead, NULL)) {
-		printf("Cannot open file");
+		printf("Cannot open file\n");
 		return FALSE;
 	}
 	*output = data;
