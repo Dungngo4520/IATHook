@@ -1,46 +1,38 @@
 #include "Header.h"
 HMODULE WINAPI _LoadLibraryA(LPCSTR lpLibFileName) {
-	char* message = NULL;
-	DWORD dwWritten = 0;
-	HANDLE file;
+	time_t t;
+	FILE* f;
+	char* datetime = NULL;
 
-	MessageBox(NULL, "LoadLibraryA Hooked", NULL, 0);
-
-	file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (file == INVALID_HANDLE_VALUE && GetLastError() == ERROR_FILE_EXISTS) {
-		file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	t = time(NULL);
+	datetime = (char*)calloc(26, sizeof(char));
+	if (datetime) {
+		ctime_s(datetime, 26, &t);
 	}
+	datetime[strlen(datetime) - 1] = '\0';
 
-	SetFilePointer(file, 0, NULL, FILE_END);
-
-	message = (char*)malloc(100);
-	sprintf_s(message, 100, "LoadLibraryA called with parameter: %s\n", lpLibFileName);
-
-	FuncWriteFile writeFile = (FuncWriteFile)oldWriteFile;
-	writeFile(file, message, strlen(message), &dwWritten, NULL);
+	fopen_s(&f, "log.txt", "a+");
+	fprintf_s(f, "%s, PID: %d, Name: %s, Parameter: (%s)\n", datetime, GetCurrentProcessId(), "LoadLibraryA", lpLibFileName);
+	fclose(f);
 
 	FuncLoadLibrary loadLibrary = (FuncLoadLibrary)oldLoadLibrary;
 	return loadLibrary(lpLibFileName);
 }
 BOOL WINAPI _CreateProcessA(LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCSTR lpCurrentDirectory, LPSTARTUPINFOA lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation) {
-	char* message = NULL;
-	DWORD dwWritten = 0;
-	HANDLE file;
+	time_t t;
+	FILE* f;
+	char* datetime = NULL;
 
-	MessageBox(NULL, "CreateProcessA Hooked", NULL, 0);
-
-	file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (file == INVALID_HANDLE_VALUE && GetLastError() == ERROR_FILE_EXISTS) {
-		file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	t = time(NULL);
+	datetime = (char*)calloc(26, sizeof(char));
+	if (datetime) {
+		ctime_s(datetime, 26, &t);
 	}
+	datetime[strlen(datetime) - 1] = '\0';
 
-	SetFilePointer(file, 0, NULL, FILE_END);
-
-	message = (char*)malloc(100);
-	sprintf_s(message, 100, "CreateProcessA called with parameter: %s\n", lpApplicationName);
-	
-	FuncWriteFile writeFile = (FuncWriteFile)oldWriteFile;
-	writeFile(file, message, strlen(message), &dwWritten, NULL);
+	fopen_s(&f, "log.txt", "a+");
+	fprintf_s(f, "%s, PID: %d, Name: %s, Parameter: (%s, %s, %p, %p, %d, %d, %p, %s, %p, %p)\n", datetime, GetCurrentProcessId(), "CreateProcessA", lpApplicationName, lpCommandLine, lpProcessAttributes, lpThreadAttributes, bInheritHandles, dwCreationFlags, lpEnvironment, lpCurrentDirectory, lpStartupInfo, lpProcessInformation);
+	fclose(f);
 
 	FuncCreateProcessA createProcess = (FuncCreateProcessA)oldCreateProcess;
 
@@ -50,72 +42,61 @@ BOOL WINAPI _CreateProcessA(LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSEC
 		lpProcessInformation);
 }
 BOOL WINAPI _WriteFile(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped) {
-	char* message = NULL;
-	DWORD dwWritten = 0;
-	HANDLE file;
+	time_t t;
+	FILE* f;
+	char* datetime = NULL;
 
-	MessageBox(NULL, "WriteFile Hooked", NULL, 0);
-
-	file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (file == INVALID_HANDLE_VALUE && GetLastError() == ERROR_FILE_EXISTS) {
-		file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	t = time(NULL);
+	datetime = (char*)calloc(26, sizeof(char));
+	if (datetime) {
+		ctime_s(datetime, 26, &t);
 	}
+	datetime[strlen(datetime) - 1] = '\0';
 
-	SetFilePointer(file, 0, NULL, FILE_END);
-
-	message = (char*)malloc(100);
-	sprintf_s(message, 100, "WriteFile called with parameter: %d\n", nNumberOfBytesToWrite);
+	fopen_s(&f, "log.txt", "a+");
+	fprintf_s(f, "%s, PID: %d, Name: %s, Parameter: (%p, %s, %d, %p, %p)\n", datetime, GetCurrentProcessId(), "WriteFile", hFile, lpBuffer, nNumberOfBytesToWrite, lpNumberOfBytesWritten, lpOverlapped);
+	fclose(f);
 
 	FuncWriteFile writeFile = (FuncWriteFile)oldWriteFile;
-	writeFile(file, message, strlen(message), &dwWritten, NULL);
-
-
 
 	return writeFile(hFile, lpBuffer, nNumberOfBytesToWrite,
 		lpNumberOfBytesWritten, lpOverlapped);
 }
 BOOL WINAPI _ReadFile(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped) {
-	char* message = NULL;
-	DWORD dwWritten = 0;
-	HANDLE file;
+	time_t t;
+	FILE* f;
+	char* datetime = NULL;
 
-	MessageBox(NULL, "ReadFile Hooked", NULL, 0);
-
-	file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (file == INVALID_HANDLE_VALUE && GetLastError() == ERROR_FILE_EXISTS) {
-		file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	t = time(NULL);
+	datetime = (char*)calloc(26, sizeof(char));
+	if (datetime) {
+		ctime_s(datetime, 26, &t);
 	}
+	datetime[strlen(datetime) - 1] = '\0';
 
-	SetFilePointer(file, 0, NULL, FILE_END);
-
-	message = (char*)malloc(100);
-	sprintf_s(message, 100, "ReadFile called with parameter: %d\n", nNumberOfBytesToRead);
-
-	FuncWriteFile writeFile = (FuncWriteFile)oldWriteFile;
-	writeFile(file, message, strlen(message), &dwWritten, NULL);
+	fopen_s(&f, "log.txt", "a+");
+	fprintf_s(f, "%s, PID: %d, Name: %s, Parameter: (%p, %s, %d, %p, %p)\n", datetime, GetCurrentProcessId(), "ReadFile", hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
+	fclose(f);
 
 	FuncReadFile readFile = (FuncReadFile)oldReadFile;
-	return readFile(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead,		lpOverlapped);
+	return readFile(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
 }
+
 LSTATUS APIENTRY _RegSetValueExA(HKEY hKey, LPCSTR lpValueName, DWORD Reserved, DWORD dwType, CONST BYTE* lpData, DWORD cbData) {
-	char* message = NULL;
-	DWORD dwWritten = 0;
-	HANDLE file;
+	time_t t;
+	FILE* f;
+	char* datetime = NULL;
 
-	MessageBox(NULL, "RegSetValueExA Hooked", NULL, 0);
-
-	file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (file == INVALID_HANDLE_VALUE && GetLastError() == ERROR_FILE_EXISTS) {
-		file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	t = time(NULL);
+	datetime = (char*)calloc(26, sizeof(char));
+	if (datetime) {
+		ctime_s(datetime, 26, &t);
 	}
+	datetime[strlen(datetime) - 1] = '\0';
 
-	SetFilePointer(file, 0, NULL, FILE_END);
-
-	message = (char*)malloc(100);
-	sprintf_s(message, 100, "RegSetValueExA called with parameter: %s\n", lpValueName);
-
-	FuncWriteFile writeFile = (FuncWriteFile)oldWriteFile;
-	writeFile(file, message, strlen(message), &dwWritten, NULL);
+	fopen_s(&f, "log.txt", "a+");
+	fprintf_s(f, "%s, PID: %d, Name: %s, Parameter: (%p, %s, %d, %d, %x, %d)\n", datetime, GetCurrentProcessId(), "RegSetValueExA", hKey, lpValueName, Reserved, dwType, lpData, cbData);
+	fclose(f);
 
 	FuncRegSetValueExA regSetValue = (FuncRegSetValueExA)oldRegSetValue;
 	return regSetValue(hKey, lpValueName, Reserved, dwType, lpData, cbData);
