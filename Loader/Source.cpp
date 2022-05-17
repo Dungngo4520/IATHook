@@ -55,25 +55,20 @@ int main(int argc, char* argv[]) {
 	}
 	if (hooked) {
 		printf("hooked! press esc to unhook.\n");
-		if (_getch() == 127) {
+		while (_getch() != 27) {
 			for (int i = 0; i < numberOfProcess; i++) {
 				HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, p[i].PID);
 				if (hProcess) {
-					//get LoadLibrary address
-					LPVOID function = (LPVOID)GetProcAddress(GetModuleHandle("kernel32.dll"), "FreeLibrary");
+					// get UnHook function address
+					function = GetProcAddress(GetModuleHandle(dllPath), "UnHook");
+					if (!function)function = GetProcAddress(LoadLibrary(dllPath), "UnHook");
 
-					// allocate dll name in target process
-					LPVOID parameter = (LPVOID)VirtualAllocEx(hProcess, NULL, strlen(dllPath) + 1, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+					// hook by running CreateHook
+					CreateRemoteThread(hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)function, NULL, NULL, NULL);
 
-					// load dll
-					int t = WriteProcessMemory(hProcess, parameter, dllPath, strlen(dllPath) + 1, NULL);
-					HANDLE h = CreateRemoteThread(hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)function, parameter, NULL, NULL);
-					WaitForSingleObject(h, INFINITE);
-
-					VirtualFreeEx(hProcess, parameter, strlen(dllPath) + 1, MEM_RELEASE | MEM_DECOMMIT);
 					CloseHandle(hProcess);
+					printf("Unhook for process %d\n", p[i].PID);
 				}
-				printf("Unhook for process %d\n", p[i].PID);
 			}
 		}
 	}

@@ -13,8 +13,6 @@ BOOL APIENTRY DllMain(HMODULE hDllModule, DWORD  callReason, LPVOID lpReserved) 
 		case DLL_THREAD_ATTACH:
 		case DLL_THREAD_DETACH:
 		case DLL_PROCESS_DETACH:
-			FreeLibrary(hModule);
-			UnHook();
 			break;
 	}
 
@@ -24,7 +22,7 @@ BOOL APIENTRY DllMain(HMODULE hDllModule, DWORD  callReason, LPVOID lpReserved) 
 	return 0;
 }
 
-void UnHook() {
+void WINAPI UnHook() {
 	if (oldLoadLibrary != 0) {
 		HookIAT("LoadLibraryA", (DWORD64)oldLoadLibrary, NULL);
 	}
@@ -81,7 +79,6 @@ bool HookIAT(char * functionName, DWORD64 newFunction, LPVOID* oldFunction) {
 				IMAGE_IMPORT_BY_NAME *pImportByName = (IMAGE_IMPORT_BY_NAME *)((DWORD64)base + pOriginalFirstThunk->u1.AddressOfData);
 
 				if (strncmp((char *)pImportByName->Name, functionName, strlen(functionName)) == 0) {
-					printf("Found %s in %s\n", (char*)pImportByName->Name, (char*)(pImportDescriptor->Name + base));
 					DWORD accessProtect;
 
 					//change protection
@@ -118,7 +115,6 @@ bool HookIAT(char * functionName, DWORD64 newFunction, LPVOID* oldFunction) {
 				IMAGE_IMPORT_BY_NAME *pImportByName = (IMAGE_IMPORT_BY_NAME *)((DWORD64)base + pOriginalFirstThunk->u1.AddressOfData);
 
 				if (strncmp((char *)pImportByName->Name, functionName, strlen(functionName)) == 0) {
-					printf("Found %s in %s\n", (char*)pImportByName->Name, (char*)(pImportDescriptor->Name + base));
 					DWORD accessProtect;
 
 					//change protection
