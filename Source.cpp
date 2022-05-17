@@ -1,12 +1,13 @@
 #include "Header.h"
 
+LPVOID oldLoadLibrary = 0, oldCreateProcess = 0, oldWriteFile = 0, oldReadFile = 0, oldRegSetValue = 0;
+
 int main(int argc, char *argv[]) {
 	char *data = NULL;
 	unsigned long size = 0;
 	int numberOfProcess = 0;
 	ProcessInfo *p = NULL;
-	DWORD64 oldLoadLibrary=0, oldCreateProcess=0, oldWriteFile=0, oldReadFile=0, oldRegSetValue=0;
-	
+
 	char *fileName = (char *)"input.json";
 	if (!readJson(fileName, (void **)&data, &size)) {
 		printf("Error: Cannot read file %s\n", fileName);
@@ -18,29 +19,37 @@ int main(int argc, char *argv[]) {
 
 	for (int i = 0; i < numberOfProcess; i++) {
 		for (int j = 0; j < p[i].numberOfFunction; j++) {
-			if (strncmp(p[i].function[j], "LoadLibraryA", 12) == 0) {
-				HookIAT(p[i].PID, "LoadLibraryA", (DWORD64)&_LoadLibraryA, &oldLoadLibrary);
-			}
-			else if (strncmp(p[i].function[j], "CreateProcessA", 14) == 0) {
-				HookIAT(p[i].PID, "CreateProcessA", (DWORD64)&_CreateProcessA, &oldCreateProcess);
+			if (strncmp(p[i].function[j], "CreateProcessA", 14) == 0) {
+				HookIAT(GetCurrentProcessId(), "CreateProcessA", (DWORD64)&_CreateProcessA, &oldCreateProcess);
 			}
 			else if (strncmp(p[i].function[j], "WriteFile", 9) == 0) {
-				HookIAT(p[i].PID, "WriteFile", (DWORD64)&_WriteFile, &oldWriteFile);
+				HookIAT(GetCurrentProcessId(), "WriteFile", (DWORD64)&_WriteFile, &oldWriteFile);
 			}
 			else if (strncmp(p[i].function[j], "ReadFile", 8) == 0) {
-				HookIAT(p[i].PID, "ReadFile", (DWORD64)&_ReadFile, &oldReadFile);
+				HookIAT(GetCurrentProcessId(), "ReadFile", (DWORD64)&_ReadFile, &oldReadFile);
 			}
 			else if (strncmp(p[i].function[j], "RegSetValueExA", 13) == 0) {
-				HookIAT(p[i].PID, "RegSetValueExA", (DWORD64)&_RegSetValueExA, &oldRegSetValue);
+				HookIAT(GetCurrentProcessId(), "RegSetValueExA", (DWORD64)&_RegSetValueExA, &oldRegSetValue);
+			}
+			else if (strncmp(p[i].function[j], "LoadLibraryA", 12) == 0) {
+				HookIAT(GetCurrentProcessId(), "LoadLibraryA", (DWORD64)&_LoadLibraryA, &oldLoadLibrary);
 			}
 		}
 	}
+
+	HANDLE file = CreateFile("temp", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (file == INVALID_HANDLE_VALUE)printf("%d", GetLastError());
+	DWORD dwWritten = 0;
+	WriteFile(file, "test", strlen("test"), &dwWritten, NULL);
+	DeleteFile("temp");
+	CloseHandle(file);
+
 
 	freeMemory(p, numberOfProcess);
 	return 0;
 }
 
-void HookIAT(int PID, char * functionName, DWORD64 newFunction, DWORD64 * oldFunction) {
+void HookIAT(int PID, char * functionName, DWORD64 newFunction, LPVOID* oldFunction) {
 	PROCESS_BASIC_INFORMATION *pBasicInfo = NULL;
 	HANDLE hProcess = INVALID_HANDLE_VALUE;
 	char* processPath = NULL;
@@ -51,24 +60,25 @@ void HookIAT(int PID, char * functionName, DWORD64 newFunction, DWORD64 * oldFun
 	IMAGE_IMPORT_DESCRIPTOR *pImportDescriptor = NULL;
 
 	//get Process handle
-	hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
-	if (hProcess == NULL) {
-		printf("Error: Cannot open process %d. Error: %d\n", PID, GetLastError());
-		return;
-	}
+	//hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
+	//if (hProcess == NULL) {
+	//	printf("Error: Cannot open process %d. Error: %d\n", PID, GetLastError());
+	//	return;
+	//}
 
 	//get base address of process
-	processPath = (char*)malloc(MAX_PATH);
-	GetModuleFileNameEx(hProcess, NULL, processPath, MAX_PATH);
-	LoadLibrary(processPath);
-	hMod = GetModuleHandle(processPath);
+	//processPath = (char*)malloc(MAX_PATH);
+	//GetModuleFileNameEx(hProcess, NULL, processPath, MAX_PATH);
+	//LoadLibrary(processPath);
+	hMod = GetModuleHandle(NULL);
 	if (!hMod) {
 		printf("Error: %d\n", GetLastError());
 	}
-	GetModuleInformation(hProcess, hMod, &moduleInfo, sizeof(MODULEINFO));
+	//GetModuleInformation(hProcess, hMod, &moduleInfo, sizeof(MODULEINFO));
 
 	//get import descriptor;
-	char* base = (char*)moduleInfo.lpBaseOfDll;
+	//char* base = (char*)moduleInfo.lpBaseOfDll;
+	char* base = (char*)hMod;
 	pDosHeader = (IMAGE_DOS_HEADER *)base;
 	pNtHeader = (IMAGE_NT_HEADERS *)((DWORD64)base + pDosHeader->e_lfanew);
 	pImportDescriptor = (IMAGE_IMPORT_DESCRIPTOR *)((DWORD64)base + pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
@@ -94,12 +104,9 @@ void HookIAT(int PID, char * functionName, DWORD64 newFunction, DWORD64 * oldFun
 						return;
 					}
 
-					*oldFunction = pFirstThunk->u1.Function;
+					*oldFunction = (LPVOID)pFirstThunk->u1.Function;
 					pFirstThunk->u1.Function = newFunction;
-					if (!WriteProcessMemory(hProcess, &pFirstThunk->u1.Function, &newFunction, sizeof(newFunction), NULL)) {
-						printf("Cant write to function. Error: %d\n", GetLastError());
-					}
-					
+
 					//unchange protection
 					if (!VirtualProtectEx(hProcess, &pFirstThunk->u1.Function, sizeof(DWORD*), accessProtect, &accessProtect)) {
 						printf("Cant change protection. Error: %d\n", GetLastError());
@@ -133,17 +140,15 @@ void HookIAT(int PID, char * functionName, DWORD64 newFunction, DWORD64 * oldFun
 						return;
 					}
 
-					*oldFunction = pFirstThunk->u1.Function;
-					//pFirstThunk->u1.Function = newFunction;
-					if (!WriteProcessMemory(hProcess, &pFirstThunk->u1.Function, &newFunction, sizeof(newFunction), NULL)) {
-						printf("Cant write to function. Error: %d\n", GetLastError());
-					}
+					*oldFunction = (LPVOID)pFirstThunk->u1.Function;
+					pFirstThunk->u1.Function = newFunction;
 
 					//unchange protection
 					if (!VirtualProtectEx(hProcess, &pFirstThunk->u1.Function, sizeof(DWORD64*), accessProtect, &accessProtect)) {
 						printf("Cant change protection. Error: %d\n", GetLastError());
 						return;
 					}
+					break;
 				}
 				pOriginalFirstThunk++;
 				pFirstThunk++;

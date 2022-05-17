@@ -1,5 +1,4 @@
 #include "Header.h"
-
 HMODULE WINAPI _LoadLibraryA(LPCSTR lpLibFileName) {
 	char* message = NULL;
 	DWORD dwWritten = 0;
@@ -8,12 +7,20 @@ HMODULE WINAPI _LoadLibraryA(LPCSTR lpLibFileName) {
 	MessageBox(NULL, "LoadLibraryA Hooked", NULL, 0);
 
 	file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (file == INVALID_HANDLE_VALUE && GetLastError() == ERROR_FILE_EXISTS) {
+		file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	}
+
 	SetFilePointer(file, 0, NULL, FILE_END);
 
 	message = (char*)malloc(100);
 	sprintf_s(message, 100, "LoadLibraryA called with parameter: %s\n", lpLibFileName);
-	WriteFile(file, message, strlen(message), &dwWritten, NULL);
-	return LoadLibraryA(lpLibFileName);
+
+	FuncWriteFile writeFile = (FuncWriteFile)oldWriteFile;
+	writeFile(file, message, strlen(message), &dwWritten, NULL);
+
+	FuncLoadLibrary loadLibrary = (FuncLoadLibrary)oldLoadLibrary;
+	return loadLibrary(lpLibFileName);
 }
 BOOL WINAPI _CreateProcessA(LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCSTR lpCurrentDirectory, LPSTARTUPINFOA lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation) {
 	char* message = NULL;
@@ -21,14 +28,23 @@ BOOL WINAPI _CreateProcessA(LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSEC
 	HANDLE file;
 
 	MessageBox(NULL, "CreateProcessA Hooked", NULL, 0);
+
 	file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (file == INVALID_HANDLE_VALUE && GetLastError() == ERROR_FILE_EXISTS) {
+		file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	}
+
 	SetFilePointer(file, 0, NULL, FILE_END);
 
 	message = (char*)malloc(100);
 	sprintf_s(message, 100, "CreateProcessA called with parameter: %s\n", lpApplicationName);
-	WriteFile(file, message, strlen(message), &dwWritten, NULL);
+	
+	FuncWriteFile writeFile = (FuncWriteFile)oldWriteFile;
+	writeFile(file, message, strlen(message), &dwWritten, NULL);
 
-	return CreateProcessA(lpApplicationName, lpCommandLine, lpProcessAttributes,
+	FuncCreateProcessA createProcess = (FuncCreateProcessA)oldCreateProcess;
+
+	return createProcess(lpApplicationName, lpCommandLine, lpProcessAttributes,
 		lpThreadAttributes, bInheritHandles, dwCreationFlags,
 		lpEnvironment, lpCurrentDirectory, lpStartupInfo,
 		lpProcessInformation);
@@ -39,13 +55,23 @@ BOOL WINAPI _WriteFile(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWri
 	HANDLE file;
 
 	MessageBox(NULL, "WriteFile Hooked", NULL, 0);
+
 	file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (file == INVALID_HANDLE_VALUE && GetLastError() == ERROR_FILE_EXISTS) {
+		file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	}
+
 	SetFilePointer(file, 0, NULL, FILE_END);
 
 	message = (char*)malloc(100);
 	sprintf_s(message, 100, "WriteFile called with parameter: %d\n", nNumberOfBytesToWrite);
-	WriteFile(file, message, strlen(message), &dwWritten, NULL);
-	return WriteFile(hFile, lpBuffer, nNumberOfBytesToWrite,
+
+	FuncWriteFile writeFile = (FuncWriteFile)oldWriteFile;
+	writeFile(file, message, strlen(message), &dwWritten, NULL);
+
+
+
+	return writeFile(hFile, lpBuffer, nNumberOfBytesToWrite,
 		lpNumberOfBytesWritten, lpOverlapped);
 }
 BOOL WINAPI _ReadFile(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped) {
@@ -54,15 +80,22 @@ BOOL WINAPI _ReadFile(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead,
 	HANDLE file;
 
 	MessageBox(NULL, "ReadFile Hooked", NULL, 0);
+
 	file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (file == INVALID_HANDLE_VALUE && GetLastError() == ERROR_FILE_EXISTS) {
+		file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	}
+
 	SetFilePointer(file, 0, NULL, FILE_END);
 
 	message = (char*)malloc(100);
 	sprintf_s(message, 100, "ReadFile called with parameter: %d\n", nNumberOfBytesToRead);
-	WriteFile(file, message, strlen(message), &dwWritten, NULL);
 
-	return ReadFile(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead,
-		lpOverlapped);
+	FuncWriteFile writeFile = (FuncWriteFile)oldWriteFile;
+	writeFile(file, message, strlen(message), &dwWritten, NULL);
+
+	FuncReadFile readFile = (FuncReadFile)oldReadFile;
+	return readFile(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead,		lpOverlapped);
 }
 LSTATUS APIENTRY _RegSetValueExA(HKEY hKey, LPCSTR lpValueName, DWORD Reserved, DWORD dwType, CONST BYTE* lpData, DWORD cbData) {
 	char* message = NULL;
@@ -70,12 +103,20 @@ LSTATUS APIENTRY _RegSetValueExA(HKEY hKey, LPCSTR lpValueName, DWORD Reserved, 
 	HANDLE file;
 
 	MessageBox(NULL, "RegSetValueExA Hooked", NULL, 0);
+
 	file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (file == INVALID_HANDLE_VALUE && GetLastError() == ERROR_FILE_EXISTS) {
+		file = CreateFile("C:\\log.txt", FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	}
+
 	SetFilePointer(file, 0, NULL, FILE_END);
 
 	message = (char*)malloc(100);
 	sprintf_s(message, 100, "RegSetValueExA called with parameter: %s\n", lpValueName);
-	WriteFile(file, message, strlen(message), &dwWritten, NULL);
 
-	return RegSetValueExA(hKey, lpValueName, Reserved, dwType, lpData, cbData);
+	FuncWriteFile writeFile = (FuncWriteFile)oldWriteFile;
+	writeFile(file, message, strlen(message), &dwWritten, NULL);
+
+	FuncRegSetValueExA regSetValue = (FuncRegSetValueExA)oldRegSetValue;
+	return regSetValue(hKey, lpValueName, Reserved, dwType, lpData, cbData);
 }

@@ -4,6 +4,13 @@
 #include <Psapi.h>
 #include <winternl.h>
 
+extern LPVOID oldLoadLibrary, oldCreateProcess, oldWriteFile, oldReadFile, oldRegSetValue;
+typedef HMODULE (WINAPI *FuncLoadLibrary)(LPCSTR);
+typedef BOOL (WINAPI *FuncCreateProcessA)(LPCSTR, LPSTR, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES, BOOL, DWORD, LPVOID, LPCSTR, LPSTARTUPINFOA, LPPROCESS_INFORMATION);
+typedef BOOL(WINAPI* FuncWriteFile)(HANDLE, LPCVOID, DWORD, LPDWORD, LPOVERLAPPED);
+typedef BOOL (WINAPI* FuncReadFile)(HANDLE, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
+typedef LSTATUS (APIENTRY* FuncRegSetValueExA)(HKEY, LPCSTR, DWORD, DWORD, CONST BYTE *, DWORD);
+
 struct ProcessInfo {
 	int PID;
 	int numberOfFunction;
@@ -17,16 +24,10 @@ int countString(char *data, int start, int end);
 void printInfo(ProcessInfo *p, int size);
 void freeMemory(ProcessInfo *p, int size);
 bool readJson(char *json, void **output, unsigned long *size);
-void HookIAT(int PID, char* functionName,DWORD64 newFunction, DWORD64* oldFunction);
+void HookIAT(int PID, char* functionName, DWORD64 newFunction, LPVOID* oldFunction);
 
-HMODULE WINAPI _LoadLibraryA(LPCSTR lpLibFileName);
-BOOL WINAPI _CreateProcessA(LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes,
-	LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags,
-	LPVOID lpEnvironment, LPCSTR lpCurrentDirectory, LPSTARTUPINFOA lpStartupInfo,
-	LPPROCESS_INFORMATION lpProcessInformation);
-BOOL WINAPI _WriteFile(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite,
-	LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped);
-BOOL WINAPI _ReadFile(HANDLE hFile, LPVOID lpBuffer,
-	DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped);
-LSTATUS APIENTRY _RegSetValueExA(HKEY hKey, LPCSTR lpValueName, DWORD Reserved, DWORD dwType,
-	CONST BYTE *lpData, DWORD cbData);
+HMODULE WINAPI _LoadLibraryA(LPCSTR);
+BOOL WINAPI _CreateProcessA(LPCSTR, LPSTR, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES, BOOL, DWORD, LPVOID, LPCSTR, LPSTARTUPINFOA, LPPROCESS_INFORMATION);
+BOOL WINAPI _WriteFile(HANDLE, LPCVOID, DWORD, LPDWORD, LPOVERLAPPED);
+BOOL WINAPI _ReadFile(HANDLE, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
+LSTATUS APIENTRY _RegSetValueExA(HKEY, LPCSTR, DWORD, DWORD, CONST BYTE *, DWORD);
