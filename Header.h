@@ -17,7 +17,7 @@ BOOL WINAPI _WriteFile(HANDLE, LPCVOID, DWORD, LPDWORD, LPOVERLAPPED);
 BOOL WINAPI _ReadFile(HANDLE, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
 LSTATUS APIENTRY _RegSetValueExA(HKEY, LPCSTR, DWORD, DWORD, CONST BYTE *, DWORD);
 
-bool HookIAT(char* functionName, DWORD64 newFunction, LPVOID* oldFunction);
+bool HookIAT(char* functionName, LPVOID newFunction, LPVOID* oldFunction);
 extern "C" {
 	__declspec(dllexport) void WINAPI UnHook();
 	__declspec(dllexport) void WINAPI CreateHook(char* functionName);

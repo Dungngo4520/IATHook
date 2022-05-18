@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <Psapi.h>
 #include <winternl.h>
+#include <TlHelp32.h>
 
 struct ProcessInfo {
 	int PID;
@@ -17,4 +18,7 @@ int countString(char *data, int start, int end);
 void printInfo(ProcessInfo *p, int size);
 void freeMemory(ProcessInfo *p, int size);
 bool readJson(char *json, void **output, unsigned long *size);
-void HookIAT(char* functionName, DWORD64 newFunction, LPVOID* oldFunction);
+bool loadDll(char* dllPath, HANDLE hProcess);
+bool CreateHook(char* functionName,char* dllPath, HANDLE hProcess);
+bool UnHook(char* dllPath, HANDLE hProcess);
+FARPROC GetRemoteFunctionAddress(HANDLE hProcess, char* dllName, char* functionName);
